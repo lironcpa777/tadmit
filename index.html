@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>לירון ינר | רואת חשבון ומתכננת מיסוי בפרישה</title>
+<meta name="description" content="הנהלת חשבונות ודוחות שנתיים לעוסקים פטורים ומורשים, החזרי מס לשכירים וייעוץ מיסוי בפרישה. לירון ינר, רואת חשבון, כפר סבא ובזום.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        navy: '#1B2A4A', blue: '#2E5C8A', page: '#F7F8FA', soft: '#EEF2F7', line: '#DDE1E6',
+        gold: '#B8975A', golddk: '#7A5F2E', goldbg: '#F6F1E6', wa: '#2F7D57', wadk: '#22603F',
+        ink: '#1F2937', ink2: '#4B5563'
+      },
+      fontFamily: { sans: ['Heebo', 'Arial', 'sans-serif'] }
+    }
+  }
+};
+</script>
+<style>
+html{font-size:19px;scroll-behavior:smooth}
+@media (min-width:768px){html{font-size:21px}}
+body{margin:0;background:#F7F8FA;color:#1F2937;font-family:'Heebo',Arial,sans-serif;line-height:1.7}
+h1,h2,h3{font-family:'Heebo',Arial,sans-serif;color:#1B2A4A;margin:0}
+p{margin:0}
+section[id]{scroll-margin-top:96px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+.btn-wa{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;background:#2F7D57;color:#fff;font-weight:700;border-radius:14px;text-decoration:none;transition:background .15s;cursor:pointer;border:0;text-align:center;line-height:1.35;font-family:inherit}
+.btn-wa:hover{background:#22603F}
+.btn-lg{min-height:3.2rem;padding:.7rem 1.7rem;font-size:1.05rem}
+.btn-sm{min-height:2.6rem;padding:.4rem 1.1rem;font-size:.9rem}
+.btn-line{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3.2rem;padding:.7rem 1.5rem;border-radius:14px;font-weight:700;text-decoration:none;border:1.5px solid #1B2A4A;color:#1B2A4A;cursor:pointer;background:#fff;text-align:center;line-height:1.35;transition:background .15s;font-family:inherit;font-size:1rem}
+.btn-line:hover{background:#EEF2F7}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2E5C8A;outline-offset:3px}
+.card{background:#fff;border:1px solid #DDE1E6;border-radius:18px}
+.field{width:100%;background:#fff;border:1.5px solid #C9CED6;border-radius:12px;padding:.6rem .9rem;font-size:1rem;font-family:inherit;color:#1F2937;min-height:2.9rem}
+.field:focus{border-color:#2E5C8A}
+.lbl{display:block;font-weight:500;margin-bottom:.3rem;font-size:.95rem}
+@media print{
+  body *{visibility:hidden}
+  #calc-print,#calc-print *{visibility:visible}
+  #calc-print{position:absolute;top:0;right:0;left:0;padding:0 12px}
+  .no-print{display:none !important}
+  html{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<noscript>לירון ינר, רואת חשבון ומתכננת מיסוי בפרישה. טלפון: 055-3066401. התע״ש 20, כפר סבא.</noscript>
+
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+/* =====================================================================
+   טבלת נתוני המס לפי שנה: המקום היחיד שמעדכנים פעם בשנה.
+   האתר בוחר לבד את השנה הנוכחית. אם עדיין אין שורה לשנה החדשה,
+   מוצגת השנה האחרונה שקיימת בטבלה, עם ציון "נכון לשנת ...".
+   מקורות:
+   - מדרגות מס, נקודת זיכוי, תקרת פטור למענק פרישה, מס נוסף:
+     "לוח עזר לחישוב מס הכנסה ממשכורת ושכר עבודה" של רשות המסים.
+   - תקרת עוסק פטור ושיעור מע"מ: "סכומים ושיעורים במע"מ" של רשות המסים.
+   יש ארבע טבלאות: עוסק פטור ומע"מ, מדרגות מס, פטור למענק פרישה, נקודת זיכוי.
+   ===================================================================== */
+/* 1. עוסק פטור ומע"מ: תקרת מחזור שנתית ושיעור מע"מ. שורה לכל שנה. */
+const TAX_DATA = {
+  2022: { ceiling: 102292, vat: 17 },
+  2023: { ceiling: 107692, vat: 17 },
+  2024: { ceiling: 120000, vat: 17 },
+  2025: { ceiling: 120000, vat: 18 },
+  2026: { ceiling: 122833, vat: 18 },
+};
+
+/* 2. מדרגות מס הכנסה שנתיות מיגיעה אישית (סעיף 121), כולל מס נוסף 3% (סעיף 121ב). */
+const bracketsOf = (t10, t14, t20, t31, t35, surtax) => [[t10, 0.10], [t14, 0.14], [t20, 0.20], [t31, 0.31], [t35, 0.35], [surtax, 0.47], [Infinity, 0.50]];
+const BRACKETS = {
+  2017: bracketsOf(74640, 107040, 171840, 238800, 496920, 639996),
+  2018: bracketsOf(74880, 107400, 172320, 239520, 498360, 641880),
+  2019: bracketsOf(75720, 108600, 174360, 242400, 504360, 649560),
+  2020: bracketsOf(75960, 108960, 174960, 243120, 505920, 651600),
+  2021: bracketsOf(75480, 108360, 173880, 241680, 502920, 647640),
+  2022: bracketsOf(77400, 110880, 178080, 247440, 514920, 663240),
+  2023: bracketsOf(81480, 116760, 187440, 260520, 542160, 698280),
+  2024: bracketsOf(84120, 120720, 193800, 269280, 560280, 721560),
+  2025: bracketsOf(84120, 120720, 193800, 269280, 560280, 721560),
+  2026: bracketsOf(84120, 120720, 228000, 301200, 560280, 721560),
+};
+
+/* 3. תקרת פטור למענק פרישה לשנת עבודה, סעיף 9(7א)(א). */
+const GRANT_EXEMPTION = {
+  1995: 6710, 1996: 7230, 1997: 7850, 1998: 8490, 1999: 9190, 2000: 9310, 2001: 9320, 2002: 9450,
+  2003: 10090, 2004: 9890, 2005: 9980, 2006: 10250, 2007: 10220, 2008: 10500, 2009: 10980, 2010: 11390,
+  2011: 11650, 2012: 11950, 2013: 12120, 2014: 12360, 2015: 12340, 2016: 12230, 2017: 12200, 2018: 12230,
+  2019: 12380, 2020: 12420, 2021: 12340, 2022: 12640, 2023: 13310, 2024: 13750, 2025: 13750, 2026: 13750,
+};
+
+/* 4. שווי חודשי של נקודת זיכוי, סעיף 33א. */
+const POINT_VALUE = {
+  1995: 121, 1996: 130, 1997: 141, 1998: 153, 1999: 165, 2000: 167, 2001: 168, 2002: 170,
+  2003: 181, 2004: 178, 2005: 178, 2006: 178, 2007: 178, 2008: 189, 2009: 197, 2010: 205,
+  2011: 209, 2012: 215, 2013: 218, 2014: 218, 2015: 218, 2016: 216, 2017: 215, 2018: 216,
+  2019: 218, 2020: 219, 2021: 218, 2022: 223, 2023: 235, 2024: 242, 2025: 242, 2026: 242,
+};
+
+const YEARS_CACHE = new Map();
+const yearsOf = (o) => {
+  if (!YEARS_CACHE.has(o)) YEARS_CACHE.set(o, Object.keys(o).map(Number).sort((a, b) => a - b));
+  return YEARS_CACHE.get(o);
+};
+const DATA_YEARS = yearsOf(TAX_DATA);
+const LATEST_YEAR = DATA_YEARS[DATA_YEARS.length - 1];
+const CURRENT_YEAR = Math.min(Math.max(new Date().getFullYear(), DATA_YEARS[0]), LATEST_YEAR);
+const BRACKET_YEARS = yearsOf(BRACKETS);
+/* ערך לשנה מסוימת; אם אין שורה לשנה הזו, השנה הקרובה ביותר שיש לה נתונים */
+const nearest = (table, year) => {
+  const ys = yearsOf(table);
+  const y = ys.reduce((best, c) => (Math.abs(c - year) < Math.abs(best - year) || (Math.abs(c - year) === Math.abs(best - year) && c > best) ? c : best), ys[0]);
+  return table[y];
+};
+
+const PHONE = `055-3066401`;
+const EMAIL = `Lironcpa555@gmail.com`;
+const wa = (text) => `https://wa.me/972553066401?text=${encodeURIComponent(text)}`;
+const WA_GENERAL = wa(`שלום לירון, הגעתי מהאתר ואשמח לתאם שיחה`);
+const fmt = (n) => Math.round(n).toLocaleString('he-IL');
+const ils = (n) => `${fmt(n)} ₪`;
+
+/* ---------- Icons ---------- */
+const Svg = ({ s = 24, w = 2, children }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
+);
+const WaIcon = ({ s = 24 }) => <Svg s={s} w={2.2}><path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/></Svg>;
+const Check = ({ s = 18 }) => <Svg s={s} w={3}><path d="M20 6 9 17l-5-5"/></Svg>;
+const Tick = ({ size = 'w-8 h-8' }) => <span className={`${size} shrink-0 rounded-full bg-goldbg text-golddk flex items-center justify-center`} aria-hidden="true"><Check s={16} /></span>;
+const IC = {
+  books: <path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM9 8h6M9 12h6M9 16h3"/>,
+  refund: <path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>,
+  retire: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2"/>,
+};
+
+const Logo = () => (
+  <svg width="58" height="42" viewBox="0 0 62 44" aria-hidden="true" className="shrink-0">
+    <defs>
+      <linearGradient id="lg-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#D3BA85"/><stop offset="1" stopColor="#9C7C3F"/></linearGradient>
+      <linearGradient id="lg-silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#CBD0D6"/><stop offset="1" stopColor="#8E959D"/></linearGradient>
+    </defs>
+    <circle cx="22" cy="22" r="17" fill="none" stroke="url(#lg-gold)" strokeWidth="3"/>
+    <circle cx="40" cy="22" r="17" fill="none" stroke="url(#lg-silver)" strokeWidth="3"/>
+    <path d="M31 7.6a17 17 0 0 1 0 28.8" fill="none" stroke="url(#lg-gold)" strokeWidth="3" strokeDasharray="14 100"/>
+    <text x="17" y="28.5" textAnchor="middle" fontFamily="Heebo,Arial,sans-serif" fontWeight="700" fontSize="17" fill="#1B2A4A">L</text>
+    <text x="45" y="28.5" textAnchor="middle" fontFamily="Heebo,Arial,sans-serif" fontWeight="700" fontSize="17" fill="#1B2A4A">Y</text>
+  </svg>
+);
+
+/* ---------- Header ---------- */
+const NAV = [['#services', `השירותים שלי`], ['#why', `למה לבחור בי`], ['#faq', `שאלות נפוצות`], ['#contact', `יצירת קשר`]];
+
+function Header() {
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="sticky top-0 z-40 bg-white border-b border-line no-print">
+      <div className="wrap flex items-center justify-between gap-3 py-3">
+        <a href="#top" className="flex items-center gap-3 no-underline">
+          <Logo />
+          <span className="flex flex-col leading-tight">
+            <span className="font-bold text-navy whitespace-nowrap text-[23px] md:text-[28px]" style={{ lineHeight: 1.1 }}>לירון ינר</span>
+            <span className="text-ink2 text-[14px] md:text-[16px]">רואת חשבון ומתכננת מיסוי בפרישה</span>
+          </span>
+        </a>
+        <nav className="hidden lg:flex items-center gap-7 text-[17px] font-medium" aria-label="ניווט ראשי">
+          {NAV.map(([h, t]) => <a key={h} href={h} className="text-navy no-underline hover:text-blue">{t}</a>)}
+        </nav>
+        <div className="flex items-center gap-2">
+          <a className="btn-wa btn-sm" href={WA_GENERAL} target="_blank" rel="noopener">
+            <WaIcon s={20} />
+            <span className="hidden sm:inline">דברו איתי בוואטסאפ</span>
+            <span className="sr-only sm:hidden">וואטסאפ</span>
+          </a>
+          <button className="lg:hidden w-11 h-11 rounded-xl border border-line flex items-center justify-center text-navy bg-white" aria-label="תפריט" aria-expanded={open} onClick={() => setOpen(!open)}>
+            <Svg w={2.4}><path d="M4 7h16M4 12h16M4 17h16"/></Svg>
+          </button>
+        </div>
+      </div>
+      {open && (
+        <nav className="lg:hidden border-t border-line bg-white" aria-label="ניווט ראשי">
+          <div className="wrap flex flex-col py-2">
+            {NAV.map(([h, t]) => <a key={h} href={h} onClick={() => setOpen(false)} className="py-3 text-navy no-underline font-medium border-b border-line last:border-0">{t}</a>)}
+          </div>
+        </nav>
+      )}
+    </header>
+  );
+}
+
+/* ---------- Tabs definition ---------- */
+/* slug: הכתובת הישירה של הלשונית (למשל ...html#retire).
+   בתוך לשונית הנהלת החשבונות יש גם קישורים ישירים להסבר על סוג העסק: #patur, #murshe. */
+const TABS = [
+  { slug: 'retire', t: `ייעוץ מיסוי בפרישה`, d: `קיבוע זכויות, פיצויים ופריסת מס, לפני שמחליטים.`, ic: IC.retire },
+  { slug: 'books', t: `הנהלת חשבונות ודוחות שנתיים לעוסקים מורשים ופטורים`, d: `שולחים חשבונית בוואטסאפ, והכול מדווח בזמן.`, ic: IC.books },
+  { slug: 'refund', t: `החזרי מס לשכירים`, d: `בודקים אם מגיע לכם החזר מס, עד 6 שנים אחורה.`, ic: IC.refund },
+];
+
+/* ---------- Hero ---------- */
+function Hero({ goTab }) {
+  return (
+    <section id="top" className="bg-white border-b border-line no-print">
+      <div className="wrap flex flex-wrap items-center gap-10 py-12 md:py-20">
+        <div className="flex flex-col gap-6" style={{ flex: '1 1 460px' }}>
+          <div className="text-golddk font-bold text-[.95rem]">רואת חשבון · יותר מ-10 שנות ניסיון</div>
+          <h1 className="font-extrabold" style={{ fontSize: 'clamp(34px,4.6vw,56px)', lineHeight: 1.2 }}>
+            אתם עובדים, בונים עסק או פורשים.<br /><span className="text-blue">אני דואגת למספרים.</span>
+          </h1>
+          <p className="text-ink2 text-[1.1rem] max-w-[620px]">
+            הנהלת חשבונות ודוחות שנתיים לעוסקים פטורים ומורשים, החזרי מס לשכירים וייעוץ מיסוי בפרישה. הכול דיגיטלי, אישי ובשפה פשוטה.
+          </p>
+          <div className="flex flex-wrap items-center gap-3 mt-1">
+            <a className="btn-wa btn-lg w-full sm:w-auto" href={WA_GENERAL} target="_blank" rel="noopener"><WaIcon s={26} /><span>שלחו לי הודעה בוואטסאפ</span></a>
+            <a className="btn-line w-full sm:w-auto" href="#services">לכל השירותים ↓</a>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3" style={{ flex: '1 1 400px' }}>
+          <div className="font-bold text-navy text-[1.1rem] mb-1">במה אפשר לעזור לכם?</div>
+          {TABS.map((tab, i) => (
+            <button key={tab.t} onClick={() => goTab(i)} className="card w-full flex items-center gap-4 p-4 text-right hover:border-blue hover:bg-soft transition-colors">
+              <span className="w-12 h-12 shrink-0 rounded-full bg-soft text-blue flex items-center justify-center"><Svg>{tab.ic}</Svg></span>
+              <span className="flex-1">
+                <span className="block font-bold text-navy text-[1.1rem] leading-snug">{tab.t}</span>
+                <span className="block text-ink2 text-[.9rem] leading-normal">{tab.d}</span>
+              </span>
+              <span className="text-gold text-[1.3rem]" aria-hidden="true">←</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Trust() {
+  return (
+    <section className="no-print" aria-label="בקצרה">
+      <div className="wrap grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4 py-8">
+        {[`רואת חשבון מוסמכת`, `מתכננת מיסוי בפרישה`, `יותר מ-10 שנות ניסיון`, `זמינות אישית בוואטסאפ`].map((t) => (
+          <div key={t} className="flex items-center gap-3 font-medium text-navy"><Tick />{t}</div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Shared bits ---------- */
+const H2 = ({ children, className = '' }) => <h2 className={`font-extrabold mb-8 ${className}`} style={{ fontSize: 'clamp(28px,3.4vw,42px)', lineHeight: 1.25 }}>{children}</h2>;
+const H3 = ({ children, className = '' }) => <h3 className={`font-bold text-[1.35rem] leading-snug mb-5 ${className}`}>{children}</h3>;
+
+const CtaBar = ({ text, waText, waLabel = `שלחו הודעה בוואטסאפ` }) => (
+  <div className="mt-10 bg-soft border border-line rounded-2xl p-6 md:p-8 flex flex-wrap items-center justify-between gap-5">
+    <p className="font-medium text-navy text-[1.1rem]" style={{ flex: '1 1 300px' }}>{text}</p>
+    <div className="flex flex-wrap gap-3">
+      <a className="btn-wa btn-lg" href={wa(waText)} target="_blank" rel="noopener"><WaIcon /><span>{waLabel}</span></a>
+      <a className="btn-line" href="#contact">ליצירת קשר</a>
+    </div>
+  </div>
+);
+
+const Bullets = ({ items }) => (
+  <ul className="list-none m-0 p-0 flex flex-col gap-4">
+    {items.map((t, i) => <li key={i} className="flex items-start gap-4"><Tick size="w-7 h-7 mt-1" /><span>{t}</span></li>)}
+  </ul>
+);
+
+/* ---------- Tab: bookkeeping + annual report ---------- */
+const StepNum = ({ n }) => <span className="w-8 h-8 shrink-0 rounded-full bg-navy text-white flex items-center justify-center font-bold text-[.9rem]">{n}</span>;
+const FlowArrow = () => <div className="hidden lg:flex items-center text-gold" aria-hidden="true"><Svg s={28} w={2.5}><path d="M19 12H5M11 6l-6 6 6 6"/></Svg></div>;
+
+function FlowDiagram() {
+  return (
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-2 items-stretch mb-12">
+      <div className="flex-1 card p-6">
+        <div className="flex items-center gap-3 font-bold text-navy mb-4"><StepNum n="1" />שולחים חשבונית בוואטסאפ</div>
+        <div className="rounded-xl p-3 bg-soft">
+          <div className="rounded-xl px-3 py-2 w-fit max-w-[90%] flex items-center gap-2 font-medium text-[.9rem]" style={{ background: '#DDEFE4', marginInlineStart: 'auto' }}>
+            <span className="text-wadk"><Svg s={20}><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></Svg></span>
+            חשבונית מספק <span className="text-white text-[.65rem] font-bold rounded px-1.5 bg-blue">PDF</span>
+          </div>
+          <div className="bg-white rounded-xl px-3 py-2 mt-2 w-fit max-w-[90%] border border-line">
+            <div className="text-[.7rem] font-bold text-golddk">הודעה אוטומטית</div>
+            <div className="font-bold text-[.9rem] text-wadk">המסמך התקבל בהצלחה ✓</div>
+          </div>
+        </div>
+      </div>
+      <FlowArrow />
+      <div className="flex-1 card p-6">
+        <div className="flex items-center gap-3 font-bold text-navy mb-4"><StepNum n="2" />אני קולטת ומדווחת</div>
+        <p className="text-ink2 text-[.95rem]">כל מסמך נבדק לפי כללי המס, והדיווח השוטף למס הכנסה ולמע״מ מוגש בזמן.</p>
+        <div className="flex gap-2 mt-4">
+          {[`מס הכנסה`, `מע״מ`].map((b) => <span key={b} className="rounded-full px-4 py-0.5 text-[.85rem] font-bold bg-goldbg text-golddk">{b}</span>)}
+        </div>
+      </div>
+      <FlowArrow />
+      <div className="flex-1 card p-6">
+        <div className="flex items-center gap-3 font-bold text-navy mb-4"><StepNum n="3" />רואים הכול בזמן אמת</div>
+        {[[`הכנסות`, '82%', '#2F7D57'], [`הוצאות`, '46%', '#B8975A']].map(([l, w, c]) => (
+          <div key={l} className="flex items-center gap-3 mt-3">
+            <span className="w-16 font-medium text-[.9rem]">{l}</span>
+            <span className="flex-1 h-4 rounded-full overflow-hidden bg-soft"><span className="block h-full rounded-full" style={{ width: w, background: c }}></span></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const scrollToId = (id, smooth = true) => {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+};
+
+function TabBooks() {
+  return (
+    <div>
+      <p className="font-bold text-navy text-[1.2rem] max-w-[820px] mb-3">אני מעניקה שירותי הנהלת חשבונות ודוחות שנתיים לעוסקים פטורים ולעוסקים מורשים.</p>
+      <p className="text-[1.1rem] max-w-[820px] mb-3">מצלמים חשבונית, שולחים בוואטסאפ וממשיכים לעבוד. הכול נקלט ומדווח בזמן, ואתם רואים בכל רגע כמה נכנס וכמה יצא. בלי קלסרים ובלי ערימות ניירת.</p>
+      <p className="text-ink2 max-w-[820px] mb-10">מתאים לפרילנסרים, לנותני שירות, לעסקים קטנים ולעסקים שרק נפתחו.</p>
+
+      <BizTypes />
+
+      <H3>איך זה עובד</H3>
+      <FlowDiagram />
+
+      <H3>נשמע מוכר?</H3>
+      <div className="grid md:grid-cols-2 gap-4">
+        {[`קבלות מפוזרות בכיס, ברכב ובמגירה`, `לא בטוחים אילו הוצאות מוכרות, ומשלמים מס מיותר`, `מגלים את המצב רק כשמגיע מכתב מהרשויות`, `לא יודעים כמה נכנס וכמה יצא החודש`].map((t) => (
+          <div key={t} className="flex items-start gap-3 bg-page border border-line rounded-2xl p-5">
+            <span className="w-7 h-7 mt-1 shrink-0 rounded-full flex items-center justify-center text-ink2 bg-white border border-line" aria-hidden="true"><Svg s={14} w={3}><path d="M18 6 6 18M6 6l12 12"/></Svg></span>
+            <span>{t}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 mb-12 bg-goldbg rounded-2xl p-6 flex flex-wrap items-center gap-4">
+        <span className="bg-white text-golddk font-bold rounded-lg px-4 py-1 border border-gold">מהיום</span>
+        <p className="font-medium text-navy" style={{ flex: '1 1 320px' }}>אתם מתרכזים בלקוחות ובעסק, ואני דואגת שכל חשבונית תיקלט ותדווח בזמן.</p>
+      </div>
+
+      <H3>מתחילים בשלושה צעדים</H3>
+      <Steps items={[
+        [`שולחים הודעה`, `כמה מילים על העסק: מה אתם עושים, והאם הוא רשום כעוסק פטור או כעוסק מורשה.`],
+        [`מדברים ומסדרים`, `שיחת היכרות קצרה ומעבר מסודר, גם אם היום יש לכם רואה חשבון אחר.`],
+        [`מצלמים וממשיכים`, `מכאן זה פשוט: מצלמים, שולחים, ואני דואגת לכל השאר.`],
+      ]} />
+      <CtaBar text="רוצים לפתוח תיק, לעבור אליי או להתאים שירות לעסק שלכם?" waText="שלום לירון, אשמח לשמוע על הנהלת חשבונות ודוח שנתי לעסק שלי" />
+    </div>
+  );
+}
+
+const Steps = ({ items }) => (
+  <div className="grid lg:grid-cols-3 gap-5">
+    {items.map(([t, d], i) => (
+      <div key={t} className="card p-6">
+        <div className="w-12 h-12 rounded-full bg-goldbg text-golddk flex items-center justify-center font-extrabold text-[1.3rem] mb-3">{i + 1}</div>
+        <div className="font-bold text-navy text-[1.15rem] mb-1">{t}</div>
+        <p className="text-ink2">{d}</p>
+      </div>
+    ))}
+  </div>
+);
+
+/* ---------- Business type: patur / murshe (inside the bookkeeping tab) ---------- */
+/* כרטיס "מה כולל השירות" לכל סוג עסק */
+const ServiceCard = ({ title, items }) => (
+  <div className="card p-7" style={{ borderTop: '5px solid #B8975A' }}>
+    <H3>{title}</H3>
+    <Bullets items={items} />
+  </div>
+);
+
+/* רשימת נושאים שנפתחים בלחיצה. כתוב במפורש "לקריאה" / "סגירה", כדי שיהיה ברור שאפשר ללחוץ.
+   אפשר לפתוח כמה נושאים יחד. */
+function InfoList({ items, firstOpen = false }) {
+  const [open, setOpen] = useState(() => new Set(firstOpen ? [0] : []));
+  const toggle = (i) => setOpen((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map(([q, a], i) => {
+        const isOpen = open.has(i);
+        return (
+          <div key={q} className={`card overflow-hidden ${isOpen ? 'border-blue' : ''}`}>
+            <button type="button" onClick={() => toggle(i)} aria-expanded={isOpen}
+              className={`w-full flex flex-col items-start sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-5 md:p-6 text-right text-navy transition-colors ${isOpen ? 'bg-soft' : 'bg-white hover:bg-soft'}`}>
+              <span className="font-bold text-[1.1rem] leading-snug">{q}</span>
+              <span className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-blue bg-white text-blue font-bold text-[.9rem] px-3 py-1.5 whitespace-nowrap">
+                {isOpen ? `סגירה` : `לקריאה`}<span className="text-[1.2rem] leading-none" aria-hidden="true">{isOpen ? '−' : '+'}</span>
+              </span>
+            </button>
+            {isOpen && <div className="px-5 md:px-6 py-5 border-t border-line text-ink">{typeof a === 'string' ? <p>{a}</p> : a}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const SEC13 = [
+  [`בעלי מקצועות חופשיים`, [`אגרונום`, `אדריכל`, `הנדסאי`, `חוקר פרטי`, `טוען רבני`, `טכנאי`, `טכנאי שיניים`, `יועץ לארגון`, `יועץ לניהול`, `יועץ מדעי`, `יועץ מס`, `כלכלן`, `מהנדס`, `מודד`, `מנהל חשבונות`, `מתורגמן`, `סוכן ביטוח`, `עורך דין`, `רואה חשבון`, `שמאי`, `בעל מעבדה כימית או רפואית`, `רופא`, `פסיכולוג`, `פיזיותרפיסט`, `וטרינר`, `רופא שיניים או מרפא שיניים`]],
+  [`נותני שירותים`, [`שירותים למופעים אומנותיים, כולל הנחייה ובניית תפאורה`, `הכנה, בדיקה ופיקוח על מבחנים`, `הרצאה, הוראה`, `כתבנות, קצרנות, תרגום, כתיבה, עריכה`, `פישור`]],
+  [`עסקים וגופים`, [`בעל בית ספר לנהיגה`, `סוחר או מתווך מקרקעין`, `בעל בית ספר או גן ילדים`, `סוחר ומתווך רכב`, `חברה הרשומה כדין`, `אגודה שיתופית הרשומה כדין לפי פקודת האגודות השיתופיות`]],
+];
+
+function BizTypes() {
+  const year = CURRENT_YEAR;
+  const y = TAX_DATA[year];
+  const vatAmount = 1000 * y.vat / 100;
+  const info = [
+    [`מה זה עוסק פטור?`, (
+      <Bullets items={[
+        <span>עוסק פטור הוא עצמאי שמחזור ההכנסות שלו עד <strong className="text-navy">{ils(y.ceiling)}</strong> בשנה, נכון לשנת <strong className="text-navy">{year}</strong>. התקרה משתנה משנה לשנה.</span>,
+        `עוסק פטור לא גובה מע״מ מהלקוחות שלו, וגם לא מקזז את המע״מ ששילם על הוצאות העסק. לכן הוא פטור מדיווחים חודשיים או דו-חודשיים למע״מ.`,
+        `עוסק פטור מוציא קבלות על הכנסותיו, ולא חשבוניות מס.`,
+        `לעוסק פטור יכולות להיות לא מעט הוצאות מוכרות. כל הוצאה שקשורה לייצור ההכנסה בעסק, וגם החלק העסקי של הוצאה מעורבת, מקטינים את הרווח, ולכן גם את המס.`,
+        `הנהלת חשבונות ודוח שנתי לעוסק פטור זולים יותר מאשר לעוסק מורשה.`,
+      ]} />
+    )],
+    [`מה זה עוסק מורשה, ומתי חייבים לעבור?`, (
+      <div>
+        <p className="mb-4">עוסק מורשה גובה מע״מ מהלקוחות, מוציא חשבוניות מס על הכנסותיו, ויכול לקזז את המע״מ ששילם על הוצאות העסק.</p>
+        <p className="mb-4">עוסק פטור שמחזור ההכנסות שלו עבר את התקרה של <strong className="text-navy">{ils(y.ceiling)}</strong> (נכון לשנת <strong className="text-navy">{year}</strong>) חייב לעבור לעוסק מורשה.</p>
+        <div className="bg-goldbg rounded-2xl p-5">
+          <div className="font-bold text-golddk mb-1">לדוגמה</div>
+          <p>עוסק מורשה שילם על בניית אתר לעסק 1,000 ₪ + <strong>{ils(vatAmount)}</strong> מע״מ ({y.vat}%), כלומר <strong>{ils(1000 + vatAmount)}</strong>. את <strong>{ils(vatAmount)}</strong> המע״מ הוא יכול לקזז מהמע״מ שהוא חייב לשלם.</p>
+        </div>
+      </div>
+    )],
+    [`מה ההבדל בין עוסק פטור לעוסק מורשה?`, (
+      <div className="overflow-x-auto border border-line rounded-2xl">
+        <table className="w-full text-right text-[.95rem]" style={{ borderCollapse: 'collapse' }}>
+          <thead><tr className="bg-soft text-navy"><th className="p-3"></th><th className="p-3 font-bold">עוסק פטור</th><th className="p-3 font-bold">עוסק מורשה</th></tr></thead>
+          <tbody>
+            {[
+              [`תקרת הכנסות בשנה`, `עד ${ils(y.ceiling)} (${year})`, `אין תקרה`],
+              [`גובה מע״מ מהלקוחות`, `לא`, `כן, ${y.vat}%`],
+              [`מקזז מע״מ על הוצאות`, `לא`, `כן`],
+              [`מסמך שמוציאים ללקוח`, `קבלה`, `חשבונית מס`],
+              [`דיווח שוטף למע״מ`, `אין דיווח חודשי או דו-חודשי`, `כל חודש או כל חודשיים`],
+            ].map(([l, p, m]) => (
+              <tr key={l} className="border-t border-line bg-white"><td className="p-3 font-bold text-navy">{l}</td><td className="p-3">{p}</td><td className="p-3">{m}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )],
+    [`אילו מקצועות חייבים להירשם כעוסק מורשה, גם כשההכנסות נמוכות מהתקרה?`, (
+      <div>
+        <p className="mb-4">לפי סעיף 13 לתקנות מס ערך מוסף (רישום), בעלי המקצועות והעסקים האלה חייבים להירשם כעוסק מורשה בכל מקרה:</p>
+        <div className="grid md:grid-cols-3 gap-5">
+          {SEC13.map(([title, items]) => (
+            <div key={title} className="bg-page border border-line rounded-2xl p-5">
+              <div className="font-bold text-golddk mb-3">{title}</div>
+              <ul className="list-none m-0 p-0 flex flex-col gap-1.5 text-[.95rem]">
+                {items.map((t) => <li key={t} className="flex gap-2"><span className="text-gold" aria-hidden="true">•</span>{t}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    )],
+  ];
+  return (
+    <div id="biz-type" className="mb-12" style={{ scrollMarginTop: '96px' }}>
+      <H3>מה כולל השירות</H3>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <ServiceCard title="לעוסק פטור" items={[
+          `פתיחת תיק עוסק פטור, דיגיטלית, בלי להגיע אליי או למשרדי רשויות המס`,
+          `הנהלת חשבונות: שולחים את החומר פעם בשנה או באופן שוטף בוואטסאפ`,
+          `הכנה והגשה של הדוח השנתי למס הכנסה`,
+          `בדיקה של הוצאות מוכרות, כדי שלא תשלמו מס מיותר`,
+          `זמינות בוואטסאפ לכל שאלה`,
+        ]} />
+        <ServiceCard title="לעוסק מורשה" items={[
+          `פתיחת תיק עוסק מורשה, דיגיטלית, בלי להגיע אליי או למשרדי רשויות המס`,
+          `הנהלת חשבונות שוטפת: שולחים את החשבוניות בוואטסאפ, פעם בחודש או פעם בחודשיים`,
+          `דיווחים שוטפים למע״מ ולמס הכנסה, בזמן`,
+          `הכנה והגשה של הדוח השנתי למס הכנסה`,
+          `בדיקה של הוצאות מוכרות ושל המע״מ שאפשר לקזז`,
+          `זמינות בוואטסאפ לכל שאלה`,
+        ]} />
+      </div>
+      <p className="text-ink2 mt-4 mb-12">אפשר להזמין גם רק הכנה והגשה של הדוח השנתי, בלי הנהלת חשבונות שוטפת.</p>
+
+      <H3 className="!mb-2">מידע חשוב לעוסקים</H3>
+      <p className="text-ink2 mb-5">לחצו על נושא כדי לקרוא עליו. לחיצה נוספת סוגרת אותו.</p>
+      <InfoList items={info} />
+    </div>
+  );
+}
+
+/* ---------- Tab: refund ---------- */
+function TabRefund() {
+  const reasons = [`עבודה בחלק מהשנה, או במספר מקומות עבודה באותה שנת מס`, `הפקדות לקופות גמל`, `סיום תואר אקדמי`, `יציאה לחופשת לידה`, `קבלת קצבאות נכות, שארים, אבטלה או דמי לידה`, `מימוש קרנות השתלמות וקופות גמל`, `תרומות למוסדות מוכרים`, `טיפול בילדים נטולי יכולת`, `אחזקת קרוב משפחה במוסד סיעודי`];
+  return (
+    <div>
+      <p className="text-[1.1rem] max-w-[820px] mb-3">לא מעט שכירים זכאים להחזר מס, ולא יודעים על כך.</p>
+      <p className="text-ink2 max-w-[820px] mb-8">אפשר לדרוש החזר מס עד 6 שנים אחורה. הזכאות יכולה לנבוע ממגוון סיבות, למשל:</p>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {reasons.map((t) => <div key={t} className="flex items-start gap-3 card p-5"><Tick size="w-7 h-7 mt-0.5" /><span className="leading-normal">{t}</span></div>)}
+      </div>
+      <p className="text-ink2 mt-4">ויש עוד סיבות.</p>
+      <CtaBar text="רוצים לבדוק אם מגיע לכם כסף בחזרה מרשות המסים? שלחו הודעה ונבדוק יחד." waText="שלום לירון, אשמח לבדוק זכאות להחזר מס" waLabel="לבדיקת זכאות בוואטסאפ" />
+    </div>
+  );
+}
+
+/* ---------- Calculator ---------- */
+function calculateAnnualTax(income, pointVal, points, brackets) {
+  let tax = 0, prev = 0;
+  for (const [limit, rate] of brackets) {
+    if (income <= prev) break;
+    tax += (Math.min(income, limit) - prev) * rate;
+    prev = limit;
+  }
+  return Math.max(0, tax - points * pointVal * 12);
+}
+const num = (v) => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+
+const Seg = ({ value, set, options, label }) => (
+  <div role="group" aria-label={label} className="flex flex-wrap gap-2">
+    {options.map(([v, t]) => (
+      <button key={v} type="button" onClick={() => set(v)} aria-pressed={value === v}
+        className={`min-h-[2.7rem] px-4 rounded-xl font-medium border ${value === v ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-line hover:border-blue'}`}>{t}</button>
+    ))}
+  </div>
+);
+const Stat = ({ label, value, sub }) => (
+  <div className="bg-page border border-line rounded-2xl p-5">
+    <div className="text-ink2 text-[.9rem]">{label}</div>
+    <div className="font-extrabold text-[1.6rem] leading-tight text-navy">{value}</div>
+    {sub && <div className="text-ink2 text-[.9rem]">{sub}</div>}
+  </div>
+);
+
+function SpreadCalculator() {
+  const [grant, setGrant] = useState('');
+  const [exemptionPerYear, setExemption] = useState(String(nearest(GRANT_EXEMPTION, CURRENT_YEAR)));
+  const [startDate, setStart] = useState('');
+  const [endDate, setEndRaw] = useState('');
+  /* כשמשנים את תאריך הפרישה, תקרת הפטור מתעדכנת לפי שנת הפרישה */
+  const setEnd = (v) => {
+    setEndRaw(v);
+    const y = Number(String(v).split('-')[0]);
+    if (y >= 1995 && y <= 2100) setExemption(String(nearest(GRANT_EXEMPTION, y)));
+  };
+  const [direction, setDirection] = useState('קדימה');
+  const [startTiming, setTiming] = useState('נוכחית');
+  const [pointsMode, setPointsMode] = useState('male');
+  const [customPoints, setCustomPoints] = useState('2.25');
+  const [creditPointValue, setPointValue] = useState(String(nearest(POINT_VALUE, CURRENT_YEAR)));
+  const [currentYearIncome, setCurrentIncome] = useState('');
+  const [expectedIncomes, setExpected] = useState({});
+
+  const r = useMemo(() => {
+    const g = num(grant);
+    const seniority = (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24 * 365.25);
+    if (!(g > 0) || !isFinite(seniority) || seniority <= 0) return { status: 'invalid' };
+    const points = pointsMode === 'male' ? 2.25 : pointsMode === 'female' ? 2.75 : num(customPoints);
+    /* נקודת זיכוי: לשנה שיש לה ערך בטבלה משתמשים בו, אחרת בערך שבשדה */
+    const pvOf = (y) => (POINT_VALUE[y] != null ? POINT_VALUE[y] : num(creditPointValue));
+    const totalExemption = num(exemptionPerYear) * seniority;
+    const taxableGrant = Math.max(0, g - totalExemption);
+    const base = { g, seniority, totalExemption, taxableGrant };
+    if (taxableGrant === 0) return { ...base, status: 'exempt' };
+
+    let spreadYears, deducted = false;
+    if (direction === 'אחורה') spreadYears = Math.min(Math.round(seniority), 6);
+    else {
+      const baseYears = Math.min(Math.round(seniority / 4), 6);
+      if (startTiming === 'נוכחית') spreadYears = baseYears;
+      else {
+        const [, m, d] = endDate.split('-').map(Number);
+        const lastQuarter = m > 9 || (m === 9 && d >= 30);
+        spreadYears = lastQuarter ? baseYears : baseYears - 1;
+        deducted = !lastQuarter;
+      }
+    }
+    if (!(spreadYears > 0)) return { ...base, status: 'noSpread', deducted };
+
+    const yearlyAmount = taxableGrant / spreadYears;
+    const retirementYear = Number(endDate.split('-')[0]);
+    const income0 = num(currentYearIncome);
+    const b0 = nearest(BRACKETS, retirementYear), pv0 = pvOf(retirementYear);
+    const taxNoSpread = calculateAnnualTax(income0 + taxableGrant, pv0, points, b0) - calculateAnnualTax(income0, pv0, points, b0);
+    const rows = [];
+    let totalTaxSpread = 0;
+    for (let i = 0; i < spreadYears; i++) {
+      const targetYear = direction === 'אחורה' ? retirementYear - i : (startTiming === 'עוקבת' ? retirementYear + 1 + i : retirementYear + i);
+      const b = nearest(BRACKETS, targetYear), pv = pvOf(targetYear);
+      const income = num(expectedIncomes[targetYear]);
+      const extraTax = calculateAnnualTax(income + yearlyAmount, pv, points, b) - calculateAnnualTax(income, pv, points, b);
+      totalTaxSpread += extraTax;
+      rows.push({ i, targetYear, income, total: income + yearlyAmount, extraTax });
+    }
+    return { ...base, status: 'ok', spreadYears, deducted, yearlyAmount, rows, taxNoSpread, totalTaxSpread, taxSavings: taxNoSpread - totalTaxSpread };
+  }, [grant, exemptionPerYear, startDate, endDate, direction, startTiming, pointsMode, customPoints, creditPointValue, currentYearIncome, expectedIncomes]);
+  const waSummary = r.status === 'ok' ? wa(
+`שלום לירון, ביצעתי תחשיב במחשבון פריסת המס באתר ואשמח לבדיקה מעמיקה.
+סכום המענק: ${ils(r.g)}
+מענק חייב במס לאחר פטור: ${ils(r.taxableGrant)}
+פריסה ${direction}: ${r.spreadYears} שנים, ${ils(r.yearlyAmount)} לשנה
+מס נוסף ללא פריסה: ${ils(r.taxNoSpread)}
+מס נוסף עם פריסה: ${ils(r.totalTaxSpread)}
+הפרש מוערך: ${ils(r.taxSavings)}`) : wa(`שלום לירון, אשמח לבדיקה של פריסת מס על מענק פרישה`);
+
+  return (
+    <div id="calc-print" className="pt-2">
+      <p className="text-ink2 max-w-[820px] mb-8">פריסת מס מאפשרת לחלק את החלק החייב במס של מענק הפרישה על פני כמה שנות מס, במקום לשלם עליו מס בשנה אחת. מזינים את הנתונים ומקבלים הערכה ראשונית.</p>
+      <div className="grid lg:grid-cols-5 gap-8 items-start">
+        <div className="lg:col-span-2 min-w-0 bg-page border border-line rounded-2xl p-6 flex flex-col gap-5">
+          <div className="font-bold text-navy text-[1.2rem]">נתוני המענק</div>
+          <div><label className="lbl" htmlFor="c-grant">סכום המענק שהתקבל (₪)</label><input id="c-grant" className="field" type="number" min="0" inputMode="numeric" value={grant} onChange={(e) => setGrant(e.target.value)} /></div>
+          <div><label className="lbl" htmlFor="c-ex">תקרת פטור לשנת עבודה (₪)</label><input id="c-ex" className="field" type="number" min="0" inputMode="numeric" value={exemptionPerYear} onChange={(e) => setExemption(e.target.value)} /></div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div><label className="lbl" htmlFor="c-sd">תאריך תחילת העסקה</label><input id="c-sd" className="field" type="date" value={startDate} onChange={(e) => setStart(e.target.value)} /></div>
+            <div><label className="lbl" htmlFor="c-ed">תאריך סיום העסקה / פרישה</label><input id="c-ed" className="field" type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} /></div>
+          </div>
+          <div><span className="lbl">כיוון פריסה מבוקש</span><Seg label="כיוון פריסה" value={direction} set={setDirection} options={[['קדימה', `קדימה`], ['אחורה', `אחורה`]]} /></div>
+          {direction === 'קדימה' && <div><span className="lbl">תזמון תחילת הפריסה</span><Seg label="תזמון תחילת הפריסה" value={startTiming} set={setTiming} options={[['נוכחית', `שנת הפרישה`], ['עוקבת', `השנה העוקבת`]]} /></div>}
+
+          <div className="font-bold text-navy text-[1.2rem] pt-4 border-t border-line">נתוני מיסוי אישיים</div>
+          <div><span className="lbl">נקודות זיכוי</span><Seg label="נקודות זיכוי" value={pointsMode} set={setPointsMode} options={[['male', `גבר (2.25)`], ['female', `אישה (2.75)`], ['custom', `אחר`]]} /></div>
+          {pointsMode === 'custom' && <div><label className="lbl" htmlFor="c-pts">מספר נקודות זיכוי</label><input id="c-pts" className="field" type="number" min="0" step="0.25" value={customPoints} onChange={(e) => setCustomPoints(e.target.value)} /></div>}
+          <div><label className="lbl" htmlFor="c-pv">שווי חודשי לנקודת זיכוי, לשנים עתידיות (₪)</label><input id="c-pv" className="field" type="number" min="0" value={creditPointValue} onChange={(e) => setPointValue(e.target.value)} />
+            <div className="text-ink2 text-[.8rem] mt-1">לשנים 1995 עד {LATEST_YEAR} המחשבון משתמש בערך הרשמי של כל שנה.</div></div>
+          <div><label className="lbl" htmlFor="c-ci">הכנסה שנתית נוכחית ללא המענק (₪)</label><input id="c-ci" className="field" type="number" min="0" inputMode="numeric" value={currentYearIncome} onChange={(e) => setCurrentIncome(e.target.value)} /></div>
+
+          {r.status === 'ok' && (
+            <div className="pt-4 border-t border-line flex flex-col gap-4">
+              <div className="font-bold text-navy text-[1.2rem]">הכנסה בכל שנת פריסה</div>
+              {r.rows.map((row) => (
+                <div key={row.targetYear}><label className="lbl" htmlFor={`c-y${row.i}`}>הכנסה בשנת {row.targetYear} (₪)</label>
+                  <input id={`c-y${row.i}`} className="field" type="number" min="0" inputMode="numeric" value={expectedIncomes[row.targetYear] || ''} onChange={(e) => setExpected({ ...expectedIncomes, [row.targetYear]: e.target.value })} /></div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-span-3 min-w-0 flex flex-col gap-5" aria-live="polite">
+          {r.status === 'invalid' && <div className="bg-page border border-line rounded-2xl p-8 text-center text-ink2">כדי לראות את התחשיב, הזינו סכום מענק גדול מאפס ותאריכי תחילה וסיום תקינים.</div>}
+          {r.status === 'exempt' && <div className="rounded-2xl p-7 font-medium text-wadk" style={{ background: '#E8F3EC', border: '1.5px solid #2F7D57' }}>המענק כולו פטור ממס, כי הוא נמוך מסך הפטור המצטבר. לכן אין צורך בפריסה.</div>}
+          {r.status === 'noSpread' && (
+            <React.Fragment>
+              <Stat label="מענק חייב במס לאחר פטור" value={ils(r.taxableGrant)} sub={`ותק: ${r.seniority.toFixed(2)} שנים · פטור מצטבר: ${ils(r.totalExemption)}`} />
+              <div className="rounded-2xl p-7 font-medium bg-goldbg">לפי הנתונים שהוזנו אין זכאות לשנות פריסה בכיוון שנבחר.{r.deducted && ` שנה אחת הופחתה מהזכאות, כי הפרישה חלה לפני הרבעון האחרון של השנה (לפני 30/09).`}</div>
+            </React.Fragment>
+          )}
+          {r.status === 'ok' && (
+            <React.Fragment>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Stat label="מענק חייב במס לאחר פטור" value={ils(r.taxableGrant)} sub={`ותק: ${r.seniority.toFixed(2)} שנים · פטור מצטבר: ${ils(r.totalExemption)}`} />
+                <Stat label="זכאות לשנות פריסה" value={`${r.spreadYears} שנים`} sub={`${ils(r.yearlyAmount)} לשנה, פריסה ${direction}`} />
+              </div>
+              {r.deducted && <div className="bg-page border border-line rounded-2xl p-4 text-[.95rem] text-ink2">שנה אחת הופחתה מהזכאות, כי הפרישה חלה לפני הרבעון האחרון של השנה (לפני 30/09) והפריסה מתחילה בשנה העוקבת.</div>}
+              <div className="overflow-x-auto border border-line rounded-2xl">
+                <table className="w-full text-right text-[.95rem]" style={{ borderCollapse: 'collapse', minWidth: '560px' }}>
+                  <thead><tr className="bg-soft text-navy">{[`שנת מס`, `הכנסה באותה שנה`, `+ חלק המענק`, `= סה״כ הכנסה`, `מס נוסף בגלל המענק`].map((h) => <th key={h} className="p-3 font-bold">{h}</th>)}</tr></thead>
+                  <tbody>
+                    {r.rows.map((row) => (
+                      <tr key={row.i} className="border-t border-line bg-white">
+                        <td className="p-3 font-bold">{row.targetYear}</td><td className="p-3">{ils(row.income)}</td><td className="p-3">{ils(r.yearlyAmount)}</td><td className="p-3">{ils(row.total)}</td><td className="p-3 font-bold">{ils(row.extraTax)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="rounded-2xl p-6 md:p-7 bg-goldbg" style={{ border: '1.5px solid #B8975A' }}>
+                <div className="grid sm:grid-cols-2 gap-4 mb-5">
+                  <div><div className="text-ink2 text-[.9rem]">מס נוסף ללא פריסה</div><div className="font-extrabold text-navy text-[1.5rem]">{ils(r.taxNoSpread)}</div></div>
+                  <div><div className="text-ink2 text-[.9rem]">מס נוסף עם פריסה</div><div className="font-extrabold text-navy text-[1.5rem]">{ils(r.totalTaxSpread)}</div></div>
+                </div>
+                <div className="pt-5 border-t border-gold/40">
+                  <div className="text-golddk font-bold">הפרש מוערך במס בזכות הפריסה</div>
+                  <div className="font-extrabold text-navy" style={{ fontSize: 'clamp(32px,4vw,46px)', lineHeight: 1.2 }}>{ils(r.taxSavings)}</div>
+                </div>
+              </div>
+            </React.Fragment>
+          )}
+          <p className="text-[.85rem] text-ink2">התחשיב הוא הערכה כללית בלבד, לפי הנתונים שהוזנו. מדרגות המס הן לפי לוח העזר של רשות המסים לשנים {BRACKET_YEARS[0]} עד {BRACKET_YEARS[BRACKET_YEARS.length - 1]}; לשנים אחרות החישוב נעשה לפי מדרגות השנה הקרובה ביותר. התחשיב אינו ייעוץ, אינו הבטחה לחיסכון ואינו תחליף לבדיקה אישית של מלוא הנתונים.</p>
+          <div className="flex flex-wrap gap-3 no-print">
+            <a className="btn-wa btn-lg" href={waSummary} target="_blank" rel="noopener" style={{ flex: '1 1 320px' }}><WaIcon /><span>שליחת התחשיב ללירון לבדיקה אישית</span></a>
+            <button type="button" className="btn-line" onClick={() => window.print()}>
+              <Svg s={22}><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/></Svg>הדפסת התחשיב
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Tab: retirement ---------- */
+function TabRetire() {
+  return (
+    <div>
+      <p className="text-[1.1rem] max-w-[820px] mb-10">קיבוע זכויות, פיצויים, קצבה או היוון: ההחלטות שמקבלים סביב הפרישה קובעות כמה מס תשלמו וכמה כסף יישאר לכם בשנים הבאות. אני בודקת את התמונה המלאה ומסבירה אותה בשפה פשוטה.</p>
+
+      <H3>למי זה מתאים</H3>
+      <div className="grid lg:grid-cols-3 gap-5 mb-12">
+        {[
+          [`01`, `לפני פרישה`, `בני 60 ומעלה שמתכננים לפרוש בשנים הקרובות ורוצים לקבל את ההחלטות הנכונות מראש.`],
+          [`02`, `אחרי פרישה`, `מי שכבר פרש ומקבל קצבה, ועדיין לא בדק או הגיש קיבוע זכויות.`],
+          [`03`, `עזיבת עבודה, בכל גיל`, `מי שעזב עבודה או עומד לעזוב, גם לפני גיל 60, ורוצה לדעת מה לעשות עם כספי הפיצויים.`],
+        ].map(([n, t, d]) => (
+          <div key={n} className="card p-6">
+            <div className="font-extrabold text-[1.8rem] leading-none text-gold mb-3">{n}</div>
+            <div className="font-bold text-navy text-[1.15rem] mb-1">{t}</div>
+            <p className="text-ink2">{d}</p>
+          </div>
+        ))}
+      </div>
+
+      <H3>במה אני מטפלת</H3>
+      <div className="flex flex-col gap-4 mb-12">
+        {[
+          [`קיבוע זכויות`, `בדיקה ובחירה של הדרך הנכונה לנצל את הפטור ממס על הקצבה, לפי המענקים שקיבלתם בעבר והצרכים שלכם היום ובעתיד.`],
+          [`ייעוץ ותכנון פרישה`, `תמונה מלאה ומסודרת: מאיפה תגיע ההכנסה אחרי הפרישה, אילו החלטות צריך לקבל ומתי, ומה המשמעות המיסויית של כל אחת מהן.`],
+          [`עזיבת עבודה ומענקי פיצויים`, `בדיקת האפשרויות לגבי כספי הפיצויים: פטור, פריסת מס או רצף זכויות (פיצויים/קצבה). המטרה היא שתשלמו את המס הנדרש, ולא שקל יותר. רלוונטי גם למי שעזב עבודה לפני גיל 60.`],
+        ].map(([t, d]) => (
+          <div key={t} className="bg-page border border-line rounded-2xl p-6 flex flex-wrap gap-x-10 gap-y-2">
+            <div className="font-bold text-[1.2rem] text-navy" style={{ flex: '1 1 220px' }}>{t}</div>
+            <p className="text-ink2" style={{ flex: '2 1 420px' }}>{d}</p>
+          </div>
+        ))}
+      </div>
+
+      <H3>איך זה עובד</H3>
+      <Steps items={[
+        [`שולחים הודעה בוואטסאפ`, `כמה מילים על המצב: לפני פרישה, אחרי פרישה או עזיבת עבודה.`],
+        [`קובעים פגישה ומכינים מסמכים`, `אחרי קביעת הפגישה תקבלו רשימה מסודרת של המסמכים שכדאי להביא.`],
+        [`מקבלים תמונה מלאה והמלצה`, `עוברים יחד על הנתונים, ותקבלו המלצה מנומקת וברורה להמשך.`],
+      ]} />
+
+      <CalculatorsHub />
+
+      <CtaBar text="פגישת ייעוץ אישית ומעמיקה, במשרד בכפר סבא או בזום. עוברים על המסמכים שלכם ויוצאים עם תוכנית עבודה ברורה." waText="שלום לירון, אשמח לתאם פגישת ייעוץ בנושא פרישה" waLabel="לתיאום פגישה בוואטסאפ" />
+    </div>
+  );
+}
+
+/* =====================================================================
+   אזור המחשבונים. כדי להוסיף מחשבון חדש:
+   1. כותבים רכיב חדש (למשל function VatCalculator() { ... }).
+   2. מוסיפים שורה לרשימה CALCULATORS שלמטה: מזהה, כותרת, תיאור, אייקון ורכיב.
+   הכרטיס והפתיחה שלו נוצרים לבד.
+   ===================================================================== */
+const CALCULATORS = [
+  { id: 'spread', title: `פריסת מס למענקי פרישה`, desc: `קיבלתם מענק פרישה? קבלו הערכה של המס עם פריסה על פני כמה שנים ובלעדיה.`, ic: IC.retire, Component: SpreadCalculator },
+];
+
+/* גישה למחשבונים רק אחרי השארת פרטים.
+   פרטי הנרשמים נשלחים למייל שבאתר דרך השירות החינמי FormSubmit.
+   בפעם הראשונה שמישהו נרשם, FormSubmit שולח למייל הזה הודעת אישור,
+   וצריך ללחוץ בה על הכפתור לאישור. מאותו רגע כל נרשם מגיע למייל. */
+const LEAD_ENDPOINT = `https://formsubmit.co/ajax/${EMAIL}`;
+const ACCESS_KEY = 'ly-calc-access';
+const LEAD_QUEUE_KEY = 'ly-lead-queue';
+
+/* גישה בטוחה לאחסון הדפדפן (בגלישה בסתר הוא עלול לא לעבוד) */
+const store = {
+  get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* בלי אחסון ממשיכים בלי לשמור */ } },
+};
+const hasAccess = () => store.get(ACCESS_KEY) === '1';
+const readLeadQueue = () => { try { return JSON.parse(store.get(LEAD_QUEUE_KEY) || '[]'); } catch (e) { return []; } };
+
+/* שליחת נרשם אחד למייל. מחזיר true רק אם FormSubmit אישר שהמייל נשלח. */
+async function postLead(lead) {
+  const payload = {
+    'שם': lead.name,
+    'טלפון': lead.phone || '-',
+    'מייל': lead.email || '-',
+    'מקור': `הרשמה למחשבוני הפרישה באתר`,
+    'זמן הרשמה': lead.at,
+    _subject: `נרשם חדש למחשבוני הפרישה: ${lead.name}`,
+    _template: 'table',
+    _honey: lead.honey || '',
+  };
+  if (lead.email) payload.email = lead.email; /* כדי שאפשר יהיה ללחוץ "השב" ישירות לנרשם */
+  try {
+    const res = await fetch(LEAD_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json().catch(() => ({}));
+    return res.ok && String(data.success) === 'true';
+  } catch (e) {
+    return false;
+  }
+}
+
+/* אם השליחה נכשלה (אין אינטרנט, השירות לא זמין או עדיין לא אושר), הנרשם נשמר וננסה שוב בביקור הבא */
+async function sendLead(lead) {
+  if (await postLead(lead)) return true;
+  store.set(LEAD_QUEUE_KEY, JSON.stringify([...readLeadQueue(), lead]));
+  return false;
+}
+async function flushLeadQueue() {
+  const queue = readLeadQueue();
+  if (!queue.length) return;
+  const left = [];
+  for (const lead of queue) if (!(await postLead(lead))) left.push(lead);
+  store.set(LEAD_QUEUE_KEY, JSON.stringify(left));
+}
+
+function validateLead({ name, phone, email }) {
+  const phoneOk = /^(\+972|0)\d{8,9}$/.test(phone), emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (name.length < 2) return `נא למלא שם מלא.`;
+  if ((phone && !phoneOk) || (email && !emailOk)) return `נא לבדוק את מספר הטלפון או את כתובת המייל.`;
+  if (!phoneOk && !emailOk) return `נא למלא טלפון או כתובת מייל.`;
+  return '';
+}
+
+function CalcGate({ onUnlock }) {
+  const [f, setF] = useState({ name: '', phone: '', email: '', honey: '' });
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const submit = async (e) => {
+    e.preventDefault();
+    const lead = { name: f.name.trim(), phone: f.phone.replace(/[\s-]/g, ''), email: f.email.trim(), honey: f.honey, at: new Date().toLocaleString('he-IL') };
+    const problem = validateLead(lead);
+    if (problem) return setErr(problem);
+    setErr(''); setBusy(true);
+    await sendLead(lead); /* הגישה נפתחת גם אם השליחה נכשלה; הנרשם נשמר לניסיון חוזר */
+    store.set(ACCESS_KEY, '1');
+    setBusy(false);
+    onUnlock();
+  };
+  return (
+    <form onSubmit={submit} noValidate className="bg-goldbg rounded-2xl p-6 md:p-8 flex flex-col gap-5">
+      <div className="flex items-start gap-4">
+        <span className="w-12 h-12 shrink-0 rounded-full bg-white text-golddk flex items-center justify-center border border-gold"><Svg><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"/></Svg></span>
+        <div>
+          <div className="font-bold text-navy text-[1.2rem] leading-snug">המחשבונים פתוחים לנרשמים</div>
+          <p className="text-ink2 text-[.95rem] mt-1">השאירו שם וטלפון או מייל, והמחשבונים ייפתחו מיד.</p>
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div><label className="lbl" htmlFor="g-name">שם מלא</label><input id="g-name" className="field" autoComplete="name" value={f.name} onChange={up('name')} /></div>
+        <div><label className="lbl" htmlFor="g-phone">טלפון</label><input id="g-phone" className="field" type="tel" autoComplete="tel" dir="ltr" style={{ textAlign: 'right' }} value={f.phone} onChange={up('phone')} /></div>
+        <div><label className="lbl" htmlFor="g-email">מייל</label><input id="g-email" className="field" type="email" autoComplete="email" dir="ltr" style={{ textAlign: 'right' }} value={f.email} onChange={up('email')} /></div>
+      </div>
+      {/* מלכודת לרובוטים: שדה נסתר שאנשים לא רואים. אם מולא, FormSubmit מתעלם מההרשמה. */}
+      <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" value={f.honey} onChange={up('honey')} style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
+      {err && <div role="alert" className="font-bold text-navy">{err}</div>}
+      <div className="flex flex-wrap items-center gap-4">
+        <button type="submit" className="btn-wa btn-lg" disabled={busy}>{busy ? `שולחים...` : `קבלת גישה למחשבונים`}</button>
+        <p className="text-ink2 text-[.85rem]" style={{ flex: '1 1 240px' }}>הפרטים ישמשו רק ליצירת קשר איתכם.</p>
+      </div>
+    </form>
+  );
+}
+
+function CalculatorsHub() {
+  const [unlocked, setUnlocked] = useState(hasAccess);
+  const [active, setActive] = useState(null);
+  const current = CALCULATORS.find((c) => c.id === active);
+  return (
+    <div id="calculators" className="mt-12">
+      <H3 className="no-print">מחשבונים לפורשים</H3>
+      {!unlocked ? <CalcGate onUnlock={() => { setUnlocked(true); setActive(CALCULATORS[0].id); }} /> : (
+        <React.Fragment>
+          <div className="grid sm:grid-cols-2 gap-4 mb-6 no-print">
+            {CALCULATORS.map((c) => (
+              <button key={c.id} onClick={() => setActive(active === c.id ? null : c.id)} aria-expanded={active === c.id}
+                className={`flex items-start gap-4 p-5 text-right rounded-2xl border transition-colors ${active === c.id ? 'bg-goldbg border-gold' : 'bg-page border-line hover:border-blue hover:bg-soft'}`}>
+                <span className="w-12 h-12 shrink-0 rounded-full bg-white border border-line text-blue flex items-center justify-center"><Svg>{c.ic}</Svg></span>
+                <span className="flex-1">
+                  <span className="block font-bold text-navy text-[1.1rem] leading-snug">{c.title}</span>
+                  <span className="block text-ink2 text-[.9rem] leading-normal mt-1">{c.desc}</span>
+                  <span className="block text-blue font-bold text-[.9rem] mt-2">{active === c.id ? `סגירת המחשבון` : `פתיחת המחשבון`}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {current && (
+            <div className="border border-line rounded-2xl p-5 md:p-7">
+              <div className="font-bold text-navy text-[1.25rem] mb-3 no-print">מחשבון {current.title}</div>
+              <current.Component />
+            </div>
+          )}
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Services ---------- */
+const TAB_CONTENT = { books: TabBooks, refund: TabRefund, retire: TabRetire };
+
+function Services({ tab, selectTab }) {
+  const Content = TAB_CONTENT[TABS[tab].slug];
+  return (
+    <section id="services" className="py-14 md:py-20">
+      <div className="wrap">
+        <div className="no-print">
+          <H2 className="!mb-3">השירותים שלי</H2>
+          <p className="text-ink2 text-[1.1rem] mb-8">בחרו נושא, והמידע ייפתח כאן למטה.</p>
+          <div role="tablist" aria-label="השירותים שלי" className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            {TABS.map((tb, i) => (
+              <button key={tb.t} role="tab" id={`tab-${i}`} aria-selected={tab === i} aria-controls="tabpanel" onClick={() => selectTab(i)}
+                className={`min-h-[3.4rem] px-4 py-2 rounded-2xl font-bold leading-snug border transition-colors ${tab === i ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-line hover:border-blue hover:bg-soft'}`}>{tb.t}</button>
+            ))}
+          </div>
+        </div>
+        <div id="tabpanel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="card p-4 sm:p-6 md:p-10" style={{ borderRadius: '24px' }}>
+          <h3 className="font-extrabold mb-7 pb-5 border-b border-line no-print" style={{ fontSize: 'clamp(24px,2.8vw,34px)', lineHeight: 1.25 }}>{TABS[tab].t}</h3>
+          <Content />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Why ---------- */
+function Why() {
+  const items = [
+    [`אמינות ודיוק, לפי הכללים`, `כל מסמך נבדק לפני שהוא נקלט, וכל המלצה מבוססת על החוק ועל הנחיות רשות המסים. פטורים והוצאות מוכרות מנוצלים כמו שצריך, והספרים שלכם מדויקים מול רשויות המס.`, <path d="M12 3 4 6v6c0 5 3.4 8.5 8 9 4.6-.5 8-4 8-9V6l-8-3zM9 12l2 2 4-4"/>],
+    [`הכול דיגיטלי ופשוט`, `מצלמים, שולחים בוואטסאפ או במייל, וזהו. פתיחת תיקים ודיווחים נעשים מרחוק, בלי להגיע למשרד.`, <path d="M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2"/>],
+    [`מקצועיות וניסיון של יותר מ-10 שנים`, `רואת חשבון מוסמכת ומתכננת מיסוי בפרישה, עם ניסיון מעשי בעסקים קטנים, בדוחות שנתיים, בהחזרי מס ובתיקי פרישה.`, <path d="M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM8.5 12.5 7 21l5-3 5 3-1.5-8.5"/>],
+    [`שפה פשוטה וזמינות אישית`, `בלי בירוקרטיה ובלי מילים מסובכות. יש שאלה? שולחים וואטסאפ ומקבלים ממני מענה אישי.`, <path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/>],
+  ];
+  return (
+    <section id="why" className="py-14 md:py-20 no-print">
+      <div className="wrap">
+        <H2>למה לבחור בי</H2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {items.map(([t, d, p]) => (
+            <div key={t} className="card p-7 flex gap-5">
+              <span className="w-12 h-12 shrink-0 rounded-full bg-goldbg text-golddk flex items-center justify-center"><Svg>{p}</Svg></span>
+              <div><h3 className="font-bold text-[1.2rem] leading-snug mb-2">{t}</h3><p className="text-ink2">{d}</p></div>
+            </div>
+          ))}
+        </div>      </div>
+    </section>
+  );
+}
+
+/* ---------- FAQ ---------- */
+const FAQS = [
+  [`איך שולחים את המסמכים בהנהלת חשבונות דיגיטלית?`, `הכי פשוט: מצלמים את החשבונית ושולחים בוואטסאפ או במייל. מיד מקבלים אישור אוטומטי שהמסמך התקבל, ואין צורך להגיע למשרד.`],
+  [`יש לי כבר רואה חשבון. מסובך לעבור? ואפשר להזמין רק דוח שנתי?`, `לא מסובך בכלל. המעבר נעשה בצורה מסודרת, ואני מלווה אתכם בכל שלב. אפשר גם להזמין רק הכנה והגשה של הדוח השנתי, בלי הנהלת חשבונות שוטפת.`],
+  [`מה ההבדל בין עוסק פטור לעוסק מורשה?`, `עוסק פטור לא גובה מע״מ מהלקוחות, לא מקזז מע״מ על ההוצאות ומוציא קבלות. עוסק מורשה גובה מע״מ, מקזז את המע״מ על הוצאות העסק ומוציא חשבוניות מס. מי שעובר את תקרת המחזור השנתית, או עוסק במקצוע שמחייב זאת, חייב להירשם כעוסק מורשה. הפירוט המלא נמצא בלשונית "הנהלת חשבונות ודוחות שנתיים לעוסקים מורשים ופטורים".`],
+  [`אני שכיר. איך יודעים אם מגיע לי החזר מס?`, `החזר מס יכול לנבוע מסיבות רבות, למשל עבודה בחלק מהשנה, חופשת לידה, סיום תואר או תרומות. אפשר לדרוש החזר עד 6 שנים אחורה. שלחו הודעה ונבדוק יחד.`],
+  [`מה זה קיבוע זכויות, ולמה זה חשוב?`, `זה ההליך שבו בוחרים איך לנצל את הפטור ממס שמגיע על קצבה, אחרי שמגיעים לגיל הפרישה. הבחירה מושפעת ממענקים שקיבלתם בעבר, והיא קובעת כמה מס תשלמו לאורך שנים.`],
+  [`איפה נפגשים?`, `איך שנוח לכם. את כל השירותים אפשר לקבל באופן דיגיטלי, מכל מקום בארץ, או בפגישה פרונטלית במשרד, ברחוב התע״ש 20 בכפר סבא. אפשר גם להיפגש בזום.`],
+];
+
+function Faq() {
+  return (
+    <section id="faq" className="bg-white border-t border-line py-14 md:py-20 no-print">
+      <div className="wrap" style={{ maxWidth: '900px' }}>
+        <H2 className="!mb-3">שאלות נפוצות</H2>
+        <p className="text-ink2 mb-6">לחצו על שאלה כדי לקרוא את התשובה.</p>
+        <InfoList items={FAQS} firstOpen />
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Contact ---------- */
+const TOPICS = [`הנהלת חשבונות שוטפת`, `דוח שנתי`, `פתיחת תיק עוסק פטור או מורשה`, `החזר מס לשכירים`, `ייעוץ מיסוי בפרישה וקיבוע זכויות`, `עזיבת עבודה ופריסת פיצויים`];
+const ContactRow = ({ icon, children }) => (
+  <div className="flex items-center gap-4"><span className="w-11 h-11 shrink-0 rounded-full bg-soft text-blue flex items-center justify-center"><Svg s={22}>{icon}</Svg></span><span>{children}</span></div>
+);
+
+function Contact() {
+  const [f, setF] = useState({ name: '', phone: '', topic: TOPICS[0], msg: '' });
+  const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const body = `שלום לירון, פנייה מהאתר\nשם: ${f.name}\nטלפון: ${f.phone}\nנושא: ${f.topic}${f.msg ? `\nהודעה: ${f.msg}` : ''}`;
+  const submit = (e) => { e.preventDefault(); window.open(wa(body), '_blank', 'noopener'); };
+  const mail = `mailto:${EMAIL}?subject=${encodeURIComponent(`פנייה מהאתר: ${f.topic}`)}&body=${encodeURIComponent(body)}`;
+  return (
+    <section id="contact" className="bg-soft border-t border-line py-14 md:py-20 no-print">
+      <div className="wrap">
+        <H2 className="!mb-3 max-w-[860px]">יש לכם שאלה על העסק, על החזר מס או על הפרישה? דברו איתי</H2>
+        <p className="text-ink2 text-[1.1rem] mb-10">פגישות נקבעות בתיאום אישי, בוואטסאפ או בטלפון.</p>
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="card p-7 md:p-9 flex flex-col gap-6">
+            <a className="btn-wa btn-lg" href={WA_GENERAL} target="_blank" rel="noopener"><WaIcon s={26} /><span>לתיאום פגישה או שיחה בוואטסאפ</span></a>
+            <ContactRow icon={<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>}>
+              <a href="tel:0553066401" className="inline-block py-1 text-navy font-bold text-[1.2rem] no-underline hover:text-blue" dir="ltr">{PHONE}</a>
+            </ContactRow>
+            <ContactRow icon={<path d="M3 6h18v12H3zM3 7l9 6 9-6"/>}>
+              <a href={`mailto:${EMAIL}`} className="text-navy font-medium no-underline hover:text-blue break-all" dir="ltr">{EMAIL}</a>
+            </ContactRow>
+            <ContactRow icon={<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>}>התע״ש 20, כפר סבא (או בפגישת זום)</ContactRow>
+          </div>
+
+          <form onSubmit={submit} className="card p-7 md:p-9 flex flex-col gap-4" style={{ borderTop: '5px solid #B8975A' }}>
+            <div className="font-bold text-navy text-[1.3rem]">השאירו פנייה קצרה</div>
+            <div><label className="lbl" htmlFor="f-name">שם מלא</label><input id="f-name" className="field" required autoComplete="name" value={f.name} onChange={up('name')} /></div>
+            <div><label className="lbl" htmlFor="f-phone">טלפון</label><input id="f-phone" className="field" type="tel" required autoComplete="tel" dir="ltr" style={{ textAlign: 'right' }} value={f.phone} onChange={up('phone')} /></div>
+            <div><label className="lbl" htmlFor="f-topic">נושא הפנייה</label>
+              <select id="f-topic" className="field" value={f.topic} onChange={up('topic')}>{TOPICS.map((t) => <option key={t}>{t}</option>)}</select></div>
+            <div><label className="lbl" htmlFor="f-msg">הודעה קצרה</label><textarea id="f-msg" className="field" rows="3" value={f.msg} onChange={up('msg')}></textarea></div>
+            <button type="submit" className="btn-wa btn-lg mt-1"><WaIcon /><span>שליחת הפנייה בוואטסאפ</span></button>
+            <a href={mail} className="text-center text-blue font-medium underline py-2">או שליחת הפנייה במייל</a>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-navy text-[.85rem] no-print" style={{ color: '#D5DAE3' }}>
+      <div className="wrap py-7 pb-24 flex flex-wrap gap-x-3 gap-y-1 justify-center text-center">
+        <span>לירון ינר · רואת חשבון ומתכננת מיסוי בפרישה · התע״ש 20, כפר סבא</span><span aria-hidden="true">|</span>
+        <span>טלפון: <a href="tel:0553066401" className="text-inherit" dir="ltr">{PHONE}</a></span><span aria-hidden="true">|</span>
+        <span>אימייל: <a href={`mailto:${EMAIL}`} className="text-inherit" dir="ltr">{EMAIL}</a></span><span aria-hidden="true">|</span>
+        <span>המידע באתר כללי ואינו מהווה ייעוץ מותאם אישית.</span>
+      </div>
+    </footer>
+  );
+}
+
+/* קישור ישיר ללשונית: למשל ...html#retire פותח את לשונית הפרישה.
+   ‎#patur או ‎#murshe פותחים את לשונית הנהלת החשבונות, ישר בהסבר על סוג העסק.
+   הכתובת בשורת הדפדפן מתעדכנת גם כשלוחצים, כך שאפשר להעתיק ולשתף אותה. */
+const BIZ_KINDS = ['patur', 'murshe'];
+const hashSlug = () => location.hash.slice(1);
+const tabIndexFromHash = () => TABS.findIndex((t) => t.slug === (BIZ_KINDS.includes(hashSlug()) ? 'books' : hashSlug()));
+const setHash = (slug) => { try { history.replaceState(null, '', `#${slug}`); } catch (e) { /* בלי עדכון כתובת, התוכן עדיין מתחלף */ } };
+const scrollToHashTarget = (smooth = true) => scrollToId(BIZ_KINDS.includes(hashSlug()) ? 'biz-type' : 'services', smooth);
+
+function App() {
+  const [tab, setTab] = useState(() => Math.max(0, tabIndexFromHash()));
+  const selectTab = (i, scroll = false) => {
+    setTab(i);
+    setHash(TABS[i].slug);
+    if (scroll) setTimeout(() => scrollToId('services'), 30);
+  };
+  const goTab = (i) => selectTab(i, true);
+  React.useEffect(() => {
+    flushLeadQueue();
+    if (tabIndexFromHash() >= 0) setTimeout(() => scrollToHashTarget(false), 300);
+    const onHash = () => {
+      const i = tabIndexFromHash();
+      if (i < 0) return;
+      setTab(i);
+      setTimeout(scrollToHashTarget, 30);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  return (
+    <React.Fragment>
+      <Header />
+      <main>
+        <Hero goTab={goTab} />
+        <Trust />
+        <Services tab={tab} selectTab={selectTab} />
+        <Why />
+        <Faq />
+        <Contact />
+      </main>
+      <Footer />
+      <a href={WA_GENERAL} target="_blank" rel="noopener" className="btn-wa no-print fixed left-4 bottom-4 z-50 min-h-[3rem] px-5 text-[.95rem]" style={{ boxShadow: '0 6px 18px rgba(27,42,74,.25)' }}>
+        <WaIcon s={24} /><span>וואטסאפ</span>
+      </a>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
